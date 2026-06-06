@@ -12,8 +12,6 @@
 #define BTN_NEW_GAME -2
 #define BTN_UNDO     -3
 #define BTN_REDO     -4
-#define BTN_SAVE     -5
-#define BTN_LOAD     -6
 #define CLICK_NONE   -1
 
 int init_gui(void);

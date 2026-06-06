@@ -39,10 +39,6 @@ int is_move_valid(ChessState* state, int from_x, int from_y, int to_x, int to_y)
 int is_king_checked(ChessState* state, PieceColor king_color);
 int apply_move(ChessState* state, int from_x, int from_y, int to_x, int to_y);
 
-HistoryNode* get_history_head(void);
-HistoryNode* get_history_current(void);
-void set_history_list(HistoryNode* head, HistoryNode* current);
-
 void init_history(ChessState initial_state);
 void push_history(ChessState state);
 int undo_move(ChessState* state);
