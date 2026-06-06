@@ -1,0 +1,11 @@
+# Build outputs
+chess
+src/*.o
+*.dSYM/
+
+# Local game logs and saves
+logs/*.log
+saves/*.sav
+
+# Temporary files
+pdf_requirements.txt
