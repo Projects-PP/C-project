@@ -2,6 +2,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+static int is_move_valid_basic(ChessState* state, int from_x, int from_y, int to_x, int to_y);
+
 void setup_board(ChessState* state) {
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
@@ -38,8 +40,7 @@ void setup_board(ChessState* state) {
         }
     }
 }
-
-int is_move_valid(ChessState* state, int from_x, int from_y, int to_x, int to_y) {
+static int is_move_valid_basic(ChessState* state, int from_x, int from_y, int to_x, int to_y) {
     if (from_x < 0 || from_x >= 8 || from_y < 0 || from_y >= 8 ||
         to_x < 0 || to_x >= 8 || to_y < 0 || to_y >= 8) {
         return 0;
@@ -146,8 +147,47 @@ int is_move_valid(ChessState* state, int from_x, int from_y, int to_x, int to_y)
 }
 
 int is_king_checked(ChessState* state, PieceColor king_color) {
-    (void)state; (void)king_color;
+    int kx = -1, ky = -1;
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            if (state->board[y][x].type == KING && state->board[y][x].color == king_color) {
+                kx = x;
+                ky = y;
+                break;
+            }
+        }
+        if (kx != -1) break;
+    }
+    if (kx == -1) return 0;
+    PieceColor original_turn = state->turn;
+    state->turn = (king_color == WHITE) ? BLACK : WHITE;
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            if (state->board[y][x].color == state->turn) {
+                if (is_move_valid_basic(state, x, y, kx, ky)) {
+                    state->turn = original_turn;
+                    return 1;
+                }
+            }
+        }
+    }
+    state->turn = original_turn;
     return 0;
+}
+
+int is_move_valid(ChessState* state, int from_x, int from_y, int to_x, int to_y) {
+    if (!is_move_valid_basic(state, from_x, from_y, to_x, to_y)) {
+        return 0;
+    }
+    ChessPiece src = state->board[from_y][from_x];
+    ChessPiece dest = state->board[to_y][to_x];
+    state->board[to_y][to_x] = src;
+    state->board[from_y][from_x].type = EMPTY;
+    state->board[from_y][from_x].color = COLOR_NONE;
+    int checked = is_king_checked(state, src.color);
+    state->board[from_y][from_x] = src;
+    state->board[to_y][to_x] = dest;
+    return !checked;
 }
 
 int apply_move(ChessState* state, int from_x, int from_y, int to_x, int to_y) {
