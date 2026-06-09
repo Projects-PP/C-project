@@ -75,6 +75,72 @@ int is_move_valid(ChessState* state, int from_x, int from_y, int to_x, int to_y)
         }
         return 0;
     }
+    if (piece.type == KNIGHT) {
+        if ((abs(dx) == 1 && abs(dy) == 2) || (abs(dx) == 2 && abs(dy) == 1)) {
+            return 1;
+        }
+        return 0;
+    }
+
+    if (piece.type == BISHOP) {
+        if (abs(dx) == abs(dy)) {
+            int step_x = (dx > 0) ? 1 : -1;
+            int step_y = (dy > 0) ? 1 : -1;
+            int cur_x = from_x + step_x;
+            int cur_y = from_y + step_y;
+            while (cur_x != to_x && cur_y != to_y) {
+                if (state->board[cur_y][cur_x].type != EMPTY) {
+                    return 0;
+                }
+                cur_x += step_x;
+                cur_y += step_y;
+            }
+            return 1;
+        }
+        return 0;
+    }
+    if (piece.type == ROOK) {
+        if (dx == 0 || dy == 0) {
+            int step_x = (dx == 0) ? 0 : ((dx > 0) ? 1 : -1);
+            int step_y = (dy == 0) ? 0 : ((dy > 0) ? 1 : -1);
+            int cur_x = from_x + step_x;
+            int cur_y = from_y + step_y;
+            while (cur_x != to_x || cur_y != to_y) {
+                if (state->board[cur_y][cur_x].type != EMPTY) {
+                    return 0;
+                }
+                cur_x += step_x;
+                cur_y += step_y;
+            }
+            return 1;
+        }
+        return 0;
+    }
+
+    if (piece.type == QUEEN) {
+        if (abs(dx) == abs(dy) || dx == 0 || dy == 0) {
+            int step_x = (dx == 0) ? 0 : ((dx > 0) ? 1 : -1);
+            int step_y = (dy == 0) ? 0 : ((dy > 0) ? 1 : -1);
+            int cur_x = from_x + step_x;
+            int cur_y = from_y + step_y;
+            while (cur_x != to_x || cur_y != to_y) {
+                if (state->board[cur_y][cur_x].type != EMPTY) {
+                    return 0;
+                }
+                cur_x += step_x;
+                cur_y += step_y;
+            }
+            return 1;
+        }
+        return 0;
+    }
+
+    if (piece.type == KING) {
+        if (abs(dx) <= 1 && abs(dy) <= 1) {
+            return 1;
+        }
+        return 0;
+    }
 
     return 0;
 }
@@ -85,8 +151,32 @@ int is_king_checked(ChessState* state, PieceColor king_color) {
 }
 
 int apply_move(ChessState* state, int from_x, int from_y, int to_x, int to_y) {
-    (void)state; (void)from_x; (void)from_y; (void)to_x; (void)to_y;
-    return 0;
+    if (!is_move_valid(state, from_x, from_y, to_x, to_y)) {
+        return 0;
+    }
+
+    ChessPiece piece = state->board[from_y][from_x];
+    if (piece.type == KING) {
+        state->castling_rights[piece.color][0] = 0;
+        state->castling_rights[piece.color][1] = 0;
+    } else if (piece.type == ROOK) {
+        int r_row = (piece.color == WHITE) ? 7 : 0;
+        if (from_y == r_row) {
+            if (from_x == 0) state->castling_rights[piece.color][0] = 0;
+            if (from_x == 7) state->castling_rights[piece.color][1] = 0;
+        }
+    }
+
+    state->board[to_y][to_x] = piece;
+    state->board[from_y][from_x].type = EMPTY;
+    state->board[from_y][from_x].color = COLOR_NONE;
+
+    if (piece.type == PAWN && (to_y == 0 || to_y == 7)) {
+        state->board[to_y][to_x].type = QUEEN;
+    }
+
+    state->turn = (state->turn == WHITE) ? BLACK : WHITE;
+    return 1;
 }
 
 void init_history(ChessState initial_state) { (void)initial_state; }
