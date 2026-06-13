@@ -233,21 +233,21 @@ void free_history(void) {
     history_current = NULL;
 }
 
-void init_history(ChessState initial_state) {
+void init_history(const ChessState* initial_state) {
     free_history();
     history_head = (HistoryNode*)malloc(sizeof(HistoryNode));
     if (history_head) {
-        history_head->state = initial_state;
+        history_head->state = *initial_state;
         history_head->prev = NULL;
         history_head->next = NULL;
         history_current = history_head;
     }
 }
 
-void push_history(ChessState state) {
+void push_history(const ChessState* state) {
     if (!history_current) return;
     HistoryNode* to_free = history_current->next;
-    while (to_free) {
+    while (to_free) { //clears all next moves (in case history_current isn't last node in history)
         HistoryNode* next = to_free->next;
         free(to_free);
         to_free = next;
@@ -255,7 +255,7 @@ void push_history(ChessState state) {
     history_current->next = NULL;
     HistoryNode* new_node = (HistoryNode*)malloc(sizeof(HistoryNode));
     if (new_node) {
-        new_node->state = state;
+        new_node->state = *state;
         new_node->prev = history_current;
         new_node->next = NULL;
         history_current->next = new_node;
