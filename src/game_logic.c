@@ -40,7 +40,7 @@ void setup_board(ChessState* state) {
         }
     }
 }
-static int is_move_valid_basic(ChessState* state, int from_x, int from_y, int to_x, int to_y) {
+static int is_move_valid_basic(ChessState* state, int from_x, int from_y, int to_x, int to_y) { // checks whether figure can fysically make move on certain cell
     if (from_x < 0 || from_x >= 8 || from_y < 0 || from_y >= 8 ||
         to_x < 0 || to_x >= 8 || to_y < 0 || to_y >= 8) {
         return 0;
@@ -149,7 +149,7 @@ static int is_move_valid_basic(ChessState* state, int from_x, int from_y, int to
 int is_king_checked(ChessState* state, PieceColor king_color) {
     int kx = -1, ky = -1;
     for (int y = 0; y < 8; y++) {
-        for (int x = 0; x < 8; x++) {
+        for (int x = 0; x < 8; x++) { //searching king
             if (state->board[y][x].type == KING && state->board[y][x].color == king_color) {
                 kx = x;
                 ky = y;
@@ -160,7 +160,7 @@ int is_king_checked(ChessState* state, PieceColor king_color) {
     }
     if (kx == -1) return 0;
     PieceColor original_turn = state->turn;
-    state->turn = (king_color == WHITE) ? BLACK : WHITE;
+    state->turn = (king_color == WHITE) ? BLACK : WHITE; //temporary changing turn
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
             if (state->board[y][x].color == state->turn) {
@@ -200,7 +200,7 @@ int apply_move(ChessState* state, int from_x, int from_y, int to_x, int to_y) {
         state->castling_rights[piece.color][0] = 0;
         state->castling_rights[piece.color][1] = 0;
     } else if (piece.type == ROOK) {
-        int r_row = (piece.color == WHITE) ? 7 : 0;
+        int r_row = (piece.color == WHITE) ? 7 : 0; //rook stating row
         if (from_y == r_row) {
             if (from_x == 0) state->castling_rights[piece.color][0] = 0;
             if (from_x == 7) state->castling_rights[piece.color][1] = 0;
@@ -219,8 +219,66 @@ int apply_move(ChessState* state, int from_x, int from_y, int to_x, int to_y) {
     return 1;
 }
 
-void init_history(ChessState initial_state) { (void)initial_state; }
-void push_history(ChessState state) { (void)state; }
-int undo_move(ChessState* state) { (void)state; return 0; }
-int redo_move(ChessState* state) { (void)state; return 0; }
-void free_history(void) {}
+static HistoryNode* history_head = NULL;
+static HistoryNode* history_current = NULL;
+
+void free_history(void) {
+    HistoryNode* curr = history_head;
+    while (curr) {
+        HistoryNode* next = curr->next;
+        free(curr);
+        curr = next;
+    }
+    history_head = NULL;
+    history_current = NULL;
+}
+
+void init_history(ChessState initial_state) {
+    free_history();
+    history_head = (HistoryNode*)malloc(sizeof(HistoryNode));
+    if (history_head) {
+        history_head->state = initial_state;
+        history_head->prev = NULL;
+        history_head->next = NULL;
+        history_current = history_head;
+    }
+}
+
+void push_history(ChessState state) {
+    if (!history_current) return;
+    HistoryNode* to_free = history_current->next;
+    while (to_free) {
+        HistoryNode* next = to_free->next;
+        free(to_free);
+        to_free = next;
+    }
+    history_current->next = NULL;
+    HistoryNode* new_node = (HistoryNode*)malloc(sizeof(HistoryNode));
+    if (new_node) {
+        new_node->state = state;
+        new_node->prev = history_current;
+        new_node->next = NULL;
+        history_current->next = new_node;
+        history_current = new_node;
+    }
+}
+
+int undo_move(ChessState* state) {
+    if (history_current && history_current->prev) {
+        history_current = history_current->prev;
+        *state = history_current->state;
+        return 1;
+    }
+    return 0;
+}
+
+int redo_move(ChessState* state) {
+    if (history_current && history_current->next) {
+        history_current = history_current->next;
+        *state = history_current->state;
+        return 1;
+    }
+    return 0;
+}
+
+
