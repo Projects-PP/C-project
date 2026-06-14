@@ -9,3 +9,6 @@ saves/*.sav
 
 # Temporary files
 pdf_requirements.txt
+.DS_Store
+._*
+Thumbs.db
