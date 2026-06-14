@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int is_move_valid_basic(ChessState* state, int from_x, int from_y, int to_x, int to_y);
 
 void setup_board(ChessState* state) {
     for (int y = 0; y < 8; y++) {
@@ -35,7 +34,7 @@ void setup_board(ChessState* state) {
     
     state->turn = WHITE;
 }
-static int is_move_valid_basic(ChessState* state, int from_x, int from_y, int to_x, int to_y) { // checks whether figure can fysically make move on certain cell
+static int is_move_valid_basic(ChessState* state, int from_x, int from_y, int to_x, int to_y) { // checks whether figure can physically make move on certain cell
     if (from_x < 0 || from_x >= 8 || from_y < 0 || from_y >= 8 ||
         to_x < 0 || to_x >= 8 || to_y < 0 || to_y >= 8) {
         return 0;
@@ -263,7 +262,8 @@ int redo_move(ChessState* state) {
         return 1;
     }
     return 0;
-}int check_game_status(ChessState* state) {
+}
+int check_game_status(ChessState* state) {
     int has_moves = 0;
     for (int y = 0; y < 8; y++) {
         for (int x = 0; x < 8; x++) {
