@@ -26,4 +26,13 @@ debug: clean all
 run: all
 	./$(TARGET)
 
-.PHONY: all clean debug run
+test: all
+	$(CC) $(CFLAGS) tests/test_logic.c src/game_logic.o src/file_operations.o -o test_logic $(LDFLAGS)
+	$(CC) $(CFLAGS) tests/test_gui.c src/gui.o src/game_logic.o src/file_operations.o -o test_gui $(LDFLAGS)
+	./test_logic
+	./test_gui
+	rm -f test_logic test_gui
+
+
+#makes compilator sure that words bellow are commands, not files
+.PHONY: all clean debug run test
