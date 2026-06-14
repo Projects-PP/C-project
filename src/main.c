@@ -1,11 +1,21 @@
 #include <SDL2/SDL.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include "game_logic.h"
 #include "gui.h"
+#include "file_operations.h"
 
 int main(void) {
+    mkdir("saves", 0777);
+    mkdir("logs", 0777);
+
     ChessState state;
-    setup_board(&state);
-    init_history(&state);
+    if (load_game(&state, "saves/game.sav")) {
+        init_history(&state);
+    } else {
+        setup_board(&state);
+        init_history(&state);
+    }
 
     if (!init_gui()) {
         return 1;
@@ -32,8 +42,10 @@ int main(void) {
                             selected_y = y;
                         }
                     } else {
+                        log_event("Move: %c%d -> %c%d", 'a' + selected_x, 8 - selected_y, 'a' + x, 8 - y);
                         if (apply_move(&state, selected_x, selected_y, x, y)) {
                             push_history(&state);
+                            save_game(&state, "saves/game.sav");
                         }
                         selected_x = -1;
                         selected_y = -1;
@@ -41,14 +53,19 @@ int main(void) {
                 } else if (action == BTN_NEW_GAME) {
                     setup_board(&state);
                     init_history(&state);
+                    save_game(&state, "saves/game.sav");
                     selected_x = -1;
                     selected_y = -1;
                 } else if (action == BTN_UNDO) {
-                    undo_move(&state);
+                    if (undo_move(&state)) {
+                        save_game(&state, "saves/game.sav");
+                    }
                     selected_x = -1;
                     selected_y = -1;
                 } else if (action == BTN_REDO) {
-                    redo_move(&state);
+                    if (redo_move(&state)) {
+                        save_game(&state, "saves/game.sav");
+                    }
                     selected_x = -1;
                     selected_y = -1;
                 }
