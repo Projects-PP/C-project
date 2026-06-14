@@ -11,10 +11,11 @@ all: $(TARGET)
 $(TARGET): $(OBJ)
 	$(CC) $(OBJ) -o $(TARGET) $(LDFLAGS)
 
-%.o: %.c
+#compilation of separate files
+%.o: %.c 
 	$(CC) $(CFLAGS) -c $< -o $@
 
-clean:
+clean: 
 	rm -f src/*.o $(TARGET)
 	rm -rf *.dSYM
 
