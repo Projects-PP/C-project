@@ -1,10 +1,12 @@
 #include "../include/gui.h"
 #include "../include/game_logic.h"
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_image.h>
 #include <stdio.h>
 
 static SDL_Window* window = NULL;
 static SDL_Renderer* renderer = NULL;
+static SDL_Texture* piece_textures[3][7];
 
 int init_gui(void) {
     if (SDL_Init(SDL_INIT_VIDEO) != 0) {
@@ -33,10 +35,43 @@ int init_gui(void) {
         return 0;
     }
 
+    const char* file_paths[3][7] = {
+        [WHITE] = { //idx 1
+            [PAWN] = "assets/images/w_pawn.png",
+            [KNIGHT] = "assets/images/w_knight.png",
+            [BISHOP] = "assets/images/w_bishop.png",
+            [ROOK] = "assets/images/w_rook.png",
+            [QUEEN] = "assets/images/w_queen.png",
+            [KING] = "assets/images/w_king.png"
+        },
+        [BLACK] = { //idx 2
+            [PAWN] = "assets/images/b_pawn.png",
+            [KNIGHT] = "assets/images/b_knight.png",
+            [BISHOP] = "assets/images/b_bishop.png",
+            [ROOK] = "assets/images/b_rook.png",
+            [QUEEN] = "assets/images/b_queen.png",
+            [KING] = "assets/images/b_king.png"
+        }
+    };
+
+    for (int c = WHITE; c <= BLACK; c++) {
+        for (int t = PAWN; t <= KING; t++) {
+            piece_textures[c][t] = IMG_LoadTexture(renderer, file_paths[c][t]);
+        }
+    }
+
     return 1;
 }
 
 void cleanup_gui(void) {
+    for (int c = WHITE; c <= BLACK; c++) {
+        for (int t = PAWN; t <= KING; t++) {
+            if (piece_textures[c][t]) {
+                SDL_DestroyTexture(piece_textures[c][t]);
+                piece_textures[c][t] = NULL;
+            }
+        }
+    }
     if (renderer) SDL_DestroyRenderer(renderer);
     if (window) SDL_DestroyWindow(window);
     SDL_Quit();
@@ -70,18 +105,15 @@ static void draw_board(ChessState* state, int selected_x, int selected_y) {
             if (p.type == EMPTY) continue;
 
             SDL_Rect r = {
-                x * CELL_SIZE + CELL_SIZE/4,
-                y * CELL_SIZE + CELL_SIZE/4,
-                CELL_SIZE/2,
-                CELL_SIZE/2
+                x * CELL_SIZE + CELL_SIZE/8,
+                y * CELL_SIZE + CELL_SIZE/8,
+                3*CELL_SIZE/4,
+                3*CELL_SIZE/4
             };
 
-            if (p.color == WHITE)
-                SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
-            else
-                SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-
-            SDL_RenderFillRect(renderer, &r);
+            if (piece_textures[p.color][p.type]) {
+                SDL_RenderCopy(renderer, piece_textures[p.color][p.type], NULL, &r);
+            }
         }
     }
 
