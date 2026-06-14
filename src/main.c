@@ -1,21 +1,25 @@
 #include <SDL2/SDL.h>
-#include <sys/stat.h>
-#include <sys/types.h>
 #include "game_logic.h"
 #include "gui.h"
 #include "file_operations.h"
+#include <time.h>
+
+#ifdef _WIN32
+#include <direct.h>
+#define make_dir(d) _mkdir(d)
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
+#define make_dir(d) mkdir(d, 0777)
+#endif
 
 int main(void) {
-    mkdir("saves", 0777);
-    mkdir("logs", 0777);
+    make_dir("saves");
+    make_dir("logs");
 
     ChessState state;
-    if (load_game(&state, "saves/game.sav")) {
-        init_history(&state);
-    } else {
-        setup_board(&state);
-        init_history(&state);
-    }
+    setup_board(&state);
+    init_history(&state);
 
     if (!init_gui()) {
         return 1;
@@ -29,6 +33,11 @@ int main(void) {
     while (running) {
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) {
+                time_t t = time(NULL);
+                struct tm* tm_info = localtime(&t);
+                char filename[64];
+                strftime(filename, sizeof(filename), "saves/game_%Y%m%d_%H%M%S.sav", tm_info);
+                save_game(&state, filename);
                 running = 0;
             }
             if (e.type == SDL_MOUSEBUTTONDOWN) {
@@ -45,7 +54,6 @@ int main(void) {
                         log_event("Move: %c%d -> %c%d", 'a' + selected_x, 8 - selected_y, 'a' + x, 8 - y);
                         if (apply_move(&state, selected_x, selected_y, x, y)) {
                             push_history(&state);
-                            save_game(&state, "saves/game.sav");
                         }
                         selected_x = -1;
                         selected_y = -1;
@@ -53,18 +61,20 @@ int main(void) {
                 } else if (action == BTN_NEW_GAME) {
                     setup_board(&state);
                     init_history(&state);
-                    save_game(&state, "saves/game.sav");
                     selected_x = -1;
                     selected_y = -1;
                 } else if (action == BTN_UNDO) {
-                    if (undo_move(&state)) {
-                        save_game(&state, "saves/game.sav");
-                    }
+                    undo_move(&state);
                     selected_x = -1;
                     selected_y = -1;
                 } else if (action == BTN_REDO) {
-                    if (redo_move(&state)) {
-                        save_game(&state, "saves/game.sav");
+                    redo_move(&state);
+                    selected_x = -1;
+                    selected_y = -1;
+                } else if (action == BTN_LOAD) {
+                    char* path = open_file_dialog();
+                    if (path && load_game(&state, path)) {
+                        init_history(&state);
                     }
                     selected_x = -1;
                     selected_y = -1;

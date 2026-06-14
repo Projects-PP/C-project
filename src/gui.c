@@ -4,6 +4,7 @@
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <stdio.h>
+#include <string.h>
 
 static SDL_Window* window = NULL;
 static TTF_Font* font = NULL;
@@ -161,10 +162,12 @@ static void draw_board(ChessState* state, int selected_x, int selected_y) {
     SDL_Rect btn_new  = { BOARD_SIZE + 20, 50, 200, 50 };
     SDL_Rect btn_undo = { BOARD_SIZE + 20, 120, 200, 50 };
     SDL_Rect btn_redo = { BOARD_SIZE + 20, 190, 200, 50 };
+    SDL_Rect btn_load = { BOARD_SIZE + 20, 260, 200, 50 };
 
     SDL_Color color_new = { 74, 105, 150, 255 };
     SDL_Color color_undo = { 108, 163, 114, 255 };
     SDL_Color color_redo = { 196, 96, 96, 255 };
+    SDL_Color color_load = { 125, 105, 180, 255 };
 
     SDL_SetRenderDrawColor(renderer, color_new.r, color_new.g, color_new.b, color_new.a);
     SDL_RenderFillRect(renderer, &btn_new);
@@ -177,6 +180,10 @@ static void draw_board(ChessState* state, int selected_x, int selected_y) {
     SDL_SetRenderDrawColor(renderer, color_redo.r, color_redo.g, color_redo.b, color_redo.a);
     SDL_RenderFillRect(renderer, &btn_redo);
     draw_btn_text("Redo", &btn_redo);
+
+    SDL_SetRenderDrawColor(renderer, color_load.r, color_load.g, color_load.b, color_load.a);
+    SDL_RenderFillRect(renderer, &btn_load);
+    draw_btn_text("Load", &btn_load);
 
     int status = check_game_status(state);
     if (status != 0) {
@@ -212,7 +219,28 @@ int handle_click(int mouse_x, int mouse_y) {
         if (mouse_y >= 50 && mouse_y <= 100) return BTN_NEW_GAME;
         if (mouse_y >= 120 && mouse_y <= 170) return BTN_UNDO;
         if (mouse_y >= 190 && mouse_y <= 240) return BTN_REDO;
+        if (mouse_y >= 260 && mouse_y <= 310) return BTN_LOAD;
     }
 
     return CLICK_NONE;
+}
+
+char* open_file_dialog(void) {
+    static char path[1024];
+    path[0] = '\0';
+#ifdef _WIN32
+    FILE* f = popen("powershell -Command \"Add-Type -AssemblyName System.Windows.Forms; $dialog = New-Object System.Windows.Forms.OpenFileDialog; $dialog.Filter = 'Save Files (*.sav)|*.sav'; $dialog.InitialDirectory = (Get-Item .).FullName + '\\saves'; [void]$dialog.ShowDialog(); $dialog.FileName\"", "r");
+#else
+    FILE* f = popen("osascript -e 'POSIX path of (choose file of type {\"sav\"} default location (POSIX file \"./saves\"))' 2>/dev/null", "r"); //pipe
+#endif
+    if (f) {
+        if (fgets(path, sizeof(path), f)) {
+            size_t len = strlen(path);
+            while (len > 0 && (path[len-1] == '\n' || path[len-1] == '\r')) {
+                path[--len] = '\0';
+            }
+        }
+        pclose(f);
+    }
+    return path[0] ? path : NULL;
 }
