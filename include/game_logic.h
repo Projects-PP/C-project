@@ -25,7 +25,6 @@ typedef struct {
 typedef struct {
     ChessPiece board[8][8];
     PieceColor turn;
-    int castling_rights[3][2];
 } ChessState;
 
 typedef struct HistoryNode {

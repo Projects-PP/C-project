@@ -34,11 +34,6 @@ void setup_board(ChessState* state) {
     }
     
     state->turn = WHITE;
-    for (int c = WHITE; c <= BLACK; c++) {
-        for (int x = 0; x <= 1; x++) {
-            state->castling_rights[c][x] = 1;
-        }
-    }
 }
 static int is_move_valid_basic(ChessState* state, int from_x, int from_y, int to_x, int to_y) { // checks whether figure can fysically make move on certain cell
     if (from_x < 0 || from_x >= 8 || from_y < 0 || from_y >= 8 ||
@@ -196,17 +191,6 @@ int apply_move(ChessState* state, int from_x, int from_y, int to_x, int to_y) {
     }
 
     ChessPiece piece = state->board[from_y][from_x];
-    if (piece.type == KING) {
-        state->castling_rights[piece.color][0] = 0;
-        state->castling_rights[piece.color][1] = 0;
-    } else if (piece.type == ROOK) {
-        int r_row = (piece.color == WHITE) ? 7 : 0; //rook stating row
-        if (from_y == r_row) {
-            if (from_x == 0) state->castling_rights[piece.color][0] = 0;
-            if (from_x == 7) state->castling_rights[piece.color][1] = 0;
-        }
-    }
-
     state->board[to_y][to_x] = piece;
     state->board[from_y][from_x].type = EMPTY;
     state->board[from_y][from_x].color = COLOR_NONE;
