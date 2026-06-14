@@ -2,9 +2,11 @@
 #include "../include/game_logic.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
+#include <SDL2/SDL_ttf.h>
 #include <stdio.h>
 
 static SDL_Window* window = NULL;
+static TTF_Font* font = NULL;
 static SDL_Renderer* renderer = NULL;
 static SDL_Texture* piece_textures[3][7];
 
@@ -32,6 +34,18 @@ int init_gui(void) {
         printf("Renderer error: %s\n", SDL_GetError());
         SDL_DestroyWindow(window);
         SDL_Quit();
+        return 0;
+    }
+
+    if (TTF_Init() != 0) {
+        printf("TTF init error: %s\n", TTF_GetError());
+        cleanup_gui();
+        return 0;
+    }
+    font = TTF_OpenFont("assets/fonts/Roboto-Regular.ttf", 20);
+    if (!font) {
+        printf("Font error: %s\n", TTF_GetError());
+        cleanup_gui();
         return 0;
     }
 
@@ -72,9 +86,36 @@ void cleanup_gui(void) {
             }
         }
     }
+    if (font) {
+        TTF_CloseFont(font);
+        font = NULL;
+    }
+    TTF_Quit();
     if (renderer) SDL_DestroyRenderer(renderer);
     if (window) SDL_DestroyWindow(window);
     SDL_Quit();
+}
+
+static void draw_btn_text(const char* text, SDL_Rect* btn_rect) {
+    SDL_Color color = {255, 255, 255, 255};
+    SDL_Surface* surface = TTF_RenderText_Blended(font, text, color);
+    if (surface) {
+        SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+        if (texture) {
+            int text_w = 0;
+            int text_h = 0;
+            SDL_QueryTexture(texture, NULL, NULL, &text_w, &text_h);
+            SDL_Rect dst_rect = {
+                btn_rect->x + (btn_rect->w - text_w) / 2,
+                btn_rect->y + (btn_rect->h - text_h) / 2,
+                text_w,
+                text_h
+            };
+            SDL_RenderCopy(renderer, texture, NULL, &dst_rect);
+            SDL_DestroyTexture(texture);
+        }
+        SDL_FreeSurface(surface);
+    }
 }
 
 static void draw_board(ChessState* state, int selected_x, int selected_y) {
@@ -121,14 +162,38 @@ static void draw_board(ChessState* state, int selected_x, int selected_y) {
     SDL_Rect btn_undo = { BOARD_SIZE + 20, 120, 200, 50 };
     SDL_Rect btn_redo = { BOARD_SIZE + 20, 190, 200, 50 };
 
-    SDL_SetRenderDrawColor(renderer, 100, 100, 255, 255);
+    SDL_Color color_new = { 74, 105, 150, 255 };
+    SDL_Color color_undo = { 108, 163, 114, 255 };
+    SDL_Color color_redo = { 196, 96, 96, 255 };
+
+    SDL_SetRenderDrawColor(renderer, color_new.r, color_new.g, color_new.b, color_new.a);
     SDL_RenderFillRect(renderer, &btn_new);
+    draw_btn_text("New Game", &btn_new);
 
-    SDL_SetRenderDrawColor(renderer, 100, 255, 100, 255);
+    SDL_SetRenderDrawColor(renderer, color_undo.r, color_undo.g, color_undo.b, color_undo.a);
     SDL_RenderFillRect(renderer, &btn_undo);
+    draw_btn_text("Undo", &btn_undo);
 
-    SDL_SetRenderDrawColor(renderer, 255, 100, 100, 255);
+    SDL_SetRenderDrawColor(renderer, color_redo.r, color_redo.g, color_redo.b, color_redo.a);
     SDL_RenderFillRect(renderer, &btn_redo);
+    draw_btn_text("Redo", &btn_redo);
+
+    int status = check_game_status(state);
+    if (status != 0) {
+        SDL_Rect overlay = { 0, 0, BOARD_SIZE, BOARD_SIZE };
+        SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 200);
+        SDL_RenderFillRect(renderer, &overlay);
+        if (status == 1) {
+            if (state->turn == WHITE) {
+                draw_btn_text("Checkmate! Black Wins", &overlay);
+            } else {
+                draw_btn_text("Checkmate! White Wins", &overlay);
+            }
+        } else {
+            draw_btn_text("Stalemate! Draw", &overlay);
+        }
+    }
 }
 
 void render_game(ChessState* state, int selected_x, int selected_y) {

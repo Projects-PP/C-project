@@ -279,6 +279,25 @@ int redo_move(ChessState* state) {
         return 1;
     }
     return 0;
+}int check_game_status(ChessState* state) {
+    int has_moves = 0;
+    for (int y = 0; y < 8; y++) {
+        for (int x = 0; x < 8; x++) {
+            if (state->board[y][x].color == state->turn) {
+                for (int ty = 0; ty < 8; ty++) {
+                    for (int tx = 0; tx < 8; tx++) {
+                        if (is_move_valid(state, x, y, tx, ty)) {
+                            has_moves = 1;
+                            break;
+                        }
+                    }
+                    if (has_moves) break;
+                }
+            }
+            if (has_moves) break;
+        }
+    }
+    if (has_moves) return 0;
+    if (is_king_checked(state, state->turn)) return 1;
+    return 2;
 }
-
-

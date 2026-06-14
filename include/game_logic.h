@@ -44,5 +44,6 @@ void push_history(const ChessState* state);
 int undo_move(ChessState* state);
 int redo_move(ChessState* state);
 void free_history(void);
+int check_game_status(ChessState* state);
 
 #endif // GAME_LOGIC_H

@@ -23,7 +23,7 @@ int main(void) {
             }
             if (e.type == SDL_MOUSEBUTTONDOWN) {
                 int action = handle_click(e.button.x, e.button.y);
-                if (action >= 0) {
+                if (action >= 0 && check_game_status(&state) == 0) {
                     int x = action % 8;
                     int y = action / 8;
                     if (selected_x == -1) {
